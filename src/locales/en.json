@@ -1535,6 +1535,7 @@
       "nnapiUnavailable": "NNAPI device discovery is unavailable on this Android build.",
       "nnapiNoDevices": "Android did not expose any NNAPI devices.",
       "nnapiNote": "A listed accelerator does not prove that a model runs on the DSP. An explicit accelerator-only inference test is still required.",
+      "v66Status": "Hardware present; NNAPI access and GGUF acceleration are unverified.",
       "versionFormat": "{{version}} ({{buildNumber}})"
     }
   },
