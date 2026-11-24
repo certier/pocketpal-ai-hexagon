@@ -102,12 +102,14 @@ export async function getHexagonInfo(chipset?: string): Promise<HexagonInfo[]> {
     // may expose it through NNAPI rather than an HTP backend device. Report
     // the hardware generation, but do not mark it as GGUF-backend supported.
     if (version === '66') {
-      return [{
-        version,
-        deviceName: 'NNAPI candidate (execution unverified)',
-        soc: 'Snapdragon 662 / SM6115',
-        supported: false,
-      }];
+      return [
+        {
+          version,
+          deviceName: 'NNAPI candidate (execution unverified)',
+          soc: 'Snapdragon 662 / SM6115',
+          supported: false,
+        },
+      ];
     }
 
     const devices = await getAvailableDevices();
