@@ -94,12 +94,8 @@ export function isHexagonVersionSupported(version: HexagonVersion): boolean {
  */
 export async function getHexagonInfo(chipset?: string): Promise<HexagonInfo[]> {
   try {
-    const devices = await getAvailableDevices();
-    const hexagonDevices = devices.filter(d => d.deviceName?.startsWith('HTP'));
-
-    const hexagonInfo: HexagonInfo[] = [];
-
-    // Detect version from chipset (all HTP devices share same version on a device)
+    // Detect V66 from the SoC before asking llama.rn for HTP backend devices.
+    // V66 is not an HTP device and must not attempt the modern HTP selection.
     const version = detectHexagonVersion(chipset);
 
     // V66 is a DSP architecture, not an HTP device. Older Android firmware
@@ -113,6 +109,10 @@ export async function getHexagonInfo(chipset?: string): Promise<HexagonInfo[]> {
         supported: false,
       }];
     }
+
+    const devices = await getAvailableDevices();
+    const hexagonDevices = devices.filter(d => d.deviceName?.startsWith('HTP'));
+    const hexagonInfo: HexagonInfo[] = [];
 
     if (version && hexagonDevices.length > 0) {
       hexagonInfo.push({
