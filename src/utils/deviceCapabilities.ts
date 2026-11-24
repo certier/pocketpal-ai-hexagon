@@ -22,6 +22,7 @@ export interface GpuCapabilities {
     hasAdreno?: boolean;
     hasI8mm?: boolean;
     hasDotProd?: boolean;
+    hasOpenCLBackend?: boolean;
     iosVersion?: number;
     isSimulator?: boolean;
   };
@@ -114,8 +115,6 @@ export async function checkGpuSupport(): Promise<GpuCapabilities> {
           reason = 'no_adreno';
         } else if (!hasI8mm || !hasDotProd) {
           reason = 'missing_cpu_features';
-        } else if (!hasOpenCLBackend) {
-          reason = 'unknown';
         } else {
           reason = 'unknown';
         }
