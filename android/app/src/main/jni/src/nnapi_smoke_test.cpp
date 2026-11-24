@@ -1,4 +1,3 @@
-#include <NeuralNetworks.h>
 #include <dlfcn.h>
 #include <jni.h>
 
@@ -10,6 +9,46 @@
 #include <vector>
 
 namespace {
+
+struct ANeuralNetworksModel;
+struct ANeuralNetworksCompilation;
+struct ANeuralNetworksExecution;
+struct ANeuralNetworksDevice;
+struct ANeuralNetworksOperandType {
+    int32_t type;
+    uint32_t dimensionCount;
+    const uint32_t* dimensions;
+    float scale;
+    int32_t zeroPoint;
+};
+
+constexpr int32_t kNnapiOk = 0;
+constexpr int32_t kDeviceUnknown = 0;
+constexpr int32_t kDeviceAccelerator = 4;
+constexpr int32_t kTensorFloat32 = 3;
+constexpr int32_t kInt32 = 2;
+constexpr int32_t kAdd = 0;
+constexpr int32_t kFusedNone = 0;
+
+using GetDeviceCount = int32_t (*)(uint32_t*);
+using GetDevice = int32_t (*)(uint32_t, ANeuralNetworksDevice**);
+using DeviceGetName = int32_t (*)(const ANeuralNetworksDevice*, const char**);
+using DeviceGetType = int32_t (*)(const ANeuralNetworksDevice*, int32_t*);
+using ModelCreate = int32_t (*)(ANeuralNetworksModel**);
+using ModelFree = void (*)(ANeuralNetworksModel*);
+using ModelAddOperand = int32_t (*)(ANeuralNetworksModel*, const ANeuralNetworksOperandType*);
+using ModelSetOperandValue = int32_t (*)(ANeuralNetworksModel*, int32_t, const void*, size_t);
+using ModelAddOperation = int32_t (*)(ANeuralNetworksModel*, int32_t, uint32_t, const uint32_t*, uint32_t, const uint32_t*);
+using ModelIdentifyInputsAndOutputs = int32_t (*)(ANeuralNetworksModel*, uint32_t, const uint32_t*, uint32_t, const uint32_t*);
+using ModelFinish = int32_t (*)(ANeuralNetworksModel*);
+using CompilationCreateForDevices = int32_t (*)(ANeuralNetworksModel*, const ANeuralNetworksDevice* const*, uint32_t, ANeuralNetworksCompilation**);
+using CompilationFinish = int32_t (*)(ANeuralNetworksCompilation*);
+using CompilationFree = void (*)(ANeuralNetworksCompilation*);
+using ExecutionCreate = int32_t (*)(ANeuralNetworksCompilation*, ANeuralNetworksExecution**);
+using ExecutionSetInput = int32_t (*)(ANeuralNetworksExecution*, int32_t, const ANeuralNetworksOperandType*, const void*, size_t);
+using ExecutionSetOutput = int32_t (*)(ANeuralNetworksExecution*, int32_t, const ANeuralNetworksOperandType*, void*, size_t);
+using ExecutionCompute = int32_t (*)(ANeuralNetworksExecution*);
+using ExecutionFree = void (*)(ANeuralNetworksExecution*);
 
 std::string jsonEscape(const char* value) {
     std::string out = "\"";
@@ -55,26 +94,26 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
         return env->NewStringUTF(result.c_str());
     }
 
-#define LOAD_NNAPI(name) const auto name = loadSymbol<decltype(&name)>(library, #name)
-    LOAD_NNAPI(ANeuralNetworks_getDeviceCount);
-    LOAD_NNAPI(ANeuralNetworks_getDevice);
-    LOAD_NNAPI(ANeuralNetworksDevice_getName);
-    LOAD_NNAPI(ANeuralNetworksDevice_getType);
-    LOAD_NNAPI(ANeuralNetworksModel_create);
-    LOAD_NNAPI(ANeuralNetworksModel_free);
-    LOAD_NNAPI(ANeuralNetworksModel_addOperand);
-    LOAD_NNAPI(ANeuralNetworksModel_setOperandValue);
-    LOAD_NNAPI(ANeuralNetworksModel_addOperation);
-    LOAD_NNAPI(ANeuralNetworksModel_identifyInputsAndOutputs);
-    LOAD_NNAPI(ANeuralNetworksModel_finish);
-    LOAD_NNAPI(ANeuralNetworksCompilation_createForDevices);
-    LOAD_NNAPI(ANeuralNetworksCompilation_finish);
-    LOAD_NNAPI(ANeuralNetworksCompilation_free);
-    LOAD_NNAPI(ANeuralNetworksExecution_create);
-    LOAD_NNAPI(ANeuralNetworksExecution_setInput);
-    LOAD_NNAPI(ANeuralNetworksExecution_setOutput);
-    LOAD_NNAPI(ANeuralNetworksExecution_compute);
-    LOAD_NNAPI(ANeuralNetworksExecution_free);
+#define LOAD_NNAPI(name, type) const auto name = loadSymbol<type>(library, #name)
+    LOAD_NNAPI(ANeuralNetworks_getDeviceCount, GetDeviceCount);
+    LOAD_NNAPI(ANeuralNetworks_getDevice, GetDevice);
+    LOAD_NNAPI(ANeuralNetworksDevice_getName, DeviceGetName);
+    LOAD_NNAPI(ANeuralNetworksDevice_getType, DeviceGetType);
+    LOAD_NNAPI(ANeuralNetworksModel_create, ModelCreate);
+    LOAD_NNAPI(ANeuralNetworksModel_free, ModelFree);
+    LOAD_NNAPI(ANeuralNetworksModel_addOperand, ModelAddOperand);
+    LOAD_NNAPI(ANeuralNetworksModel_setOperandValue, ModelSetOperandValue);
+    LOAD_NNAPI(ANeuralNetworksModel_addOperation, ModelAddOperation);
+    LOAD_NNAPI(ANeuralNetworksModel_identifyInputsAndOutputs, ModelIdentifyInputsAndOutputs);
+    LOAD_NNAPI(ANeuralNetworksModel_finish, ModelFinish);
+    LOAD_NNAPI(ANeuralNetworksCompilation_createForDevices, CompilationCreateForDevices);
+    LOAD_NNAPI(ANeuralNetworksCompilation_finish, CompilationFinish);
+    LOAD_NNAPI(ANeuralNetworksCompilation_free, CompilationFree);
+    LOAD_NNAPI(ANeuralNetworksExecution_create, ExecutionCreate);
+    LOAD_NNAPI(ANeuralNetworksExecution_setInput, ExecutionSetInput);
+    LOAD_NNAPI(ANeuralNetworksExecution_setOutput, ExecutionSetOutput);
+    LOAD_NNAPI(ANeuralNetworksExecution_compute, ExecutionCompute);
+    LOAD_NNAPI(ANeuralNetworksExecution_free, ExecutionFree);
 #undef LOAD_NNAPI
 
     if (ANeuralNetworks_getDeviceCount == nullptr ||
@@ -104,7 +143,7 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
 
     uint32_t deviceCount = 0;
     int32_t status = ANeuralNetworks_getDeviceCount(&deviceCount);
-    if (status != ANEURALNETWORKS_NO_ERROR) {
+    if (status != kNnapiOk) {
         dlclose(library);
         const std::string result =
             "{\"available\":false,\"executionVerified\":false,\"status\":" +
@@ -116,12 +155,12 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
     for (uint32_t i = 0; i < deviceCount && i < 64; ++i) {
         ANeuralNetworksDevice* device = nullptr;
         const char* name = nullptr;
-        int32_t type = ANEURALNETWORKS_DEVICE_UNKNOWN;
+        int32_t type = kDeviceUnknown;
         if (ANeuralNetworks_getDevice(i, &device) != ANEURALNETWORKS_NO_ERROR ||
             device == nullptr ||
             ANeuralNetworksDevice_getName(device, &name) != ANEURALNETWORKS_NO_ERROR ||
             ANeuralNetworksDevice_getType(device, &type) != ANEURALNETWORKS_NO_ERROR ||
-            type != ANEURALNETWORKS_DEVICE_ACCELERATOR) {
+            type != kDeviceAccelerator) {
             continue;
         }
         std::string lowered = name == nullptr ? "" : name;
@@ -151,12 +190,12 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
         resultCode = ANeuralNetworksModel_create(&model);
         const uint32_t dimensions[] = {4};
         const ANeuralNetworksOperandType tensorType = {
-            ANEURALNETWORKS_TENSOR_FLOAT32, 1, dimensions, 0.0f, 0
+            kTensorFloat32, 1, dimensions, 0.0f, 0
         };
         const ANeuralNetworksOperandType scalarType = {
-            ANEURALNETWORKS_INT32, 0, nullptr, 0.0f, 0
+            kInt32, 0, nullptr, 0.0f, 0
         };
-        const int32_t activation = ANEURALNETWORKS_FUSED_NONE;
+        const int32_t activation = kFusedNone;
 
         if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
         if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
@@ -170,7 +209,7 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
         const uint32_t operationOutputs[] = {3};
         if (resultCode == ANEURALNETWORKS_NO_ERROR) {
             resultCode = ANeuralNetworksModel_addOperation(
-                model, ANEURALNETWORKS_ADD, 3, operationInputs, 1, operationOutputs);
+                model, kAdd, 3, operationInputs, 1, operationOutputs);
         }
         const uint32_t inputIndexes[] = {0, 1};
         const uint32_t outputIndexes[] = {3};
