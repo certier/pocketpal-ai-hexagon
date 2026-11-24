@@ -197,9 +197,7 @@ export async function runNNAPISmokeTest(): Promise<NNAPISmokeTestResult> {
       available: false,
       executionVerified: false,
       error:
-        error instanceof Error
-          ? error.message
-          : 'NNAPI execution test failed.',
+        error instanceof Error ? error.message : 'NNAPI execution test failed.',
     };
   }
 }
