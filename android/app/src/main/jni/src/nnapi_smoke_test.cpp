@@ -157,19 +157,18 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
         ANeuralNetworksDevice* device = nullptr;
         const char* name = nullptr;
         int32_t type = kDeviceUnknown;
-        if (ANeuralNetworks_getDevice(i, &device) != ANEURALNETWORKS_NO_ERROR ||
+        if (ANeuralNetworks_getDevice(i, &device) != kNnapiOk ||
             device == nullptr ||
-            ANeuralNetworksDevice_getName(device, &name) != ANEURALNETWORKS_NO_ERROR ||
-            ANeuralNetworksDevice_getType(device, &type) != ANEURALNETWORKS_NO_ERROR ||
-            type != kDeviceAccelerator) {
+            ANeuralNetworksDevice_getName(device, &name) != kNnapiOk ||
+            ANeuralNetworksDevice_getType(device, &type) != kNnapiOk ||
+            type == 2 || type == 3) {
             continue;
         }
         std::string lowered = name == nullptr ? "" : name;
         for (char& c : lowered) c = static_cast<char>(::tolower(static_cast<unsigned char>(c)));
         if (lowered.find("qualcomm") != std::string::npos ||
             lowered.find("qti") != std::string::npos ||
-            lowered.find("hexagon") != std::string::npos ||
-            lowered.find("adreno") != std::string::npos) {
+            lowered.find("hexagon") != std::string::npos) {
             candidates.emplace_back(device, name == nullptr ? "Unknown" : name);
         }
     }
@@ -186,7 +185,7 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
         ANeuralNetworksModel* model = nullptr;
         ANeuralNetworksCompilation* compilation = nullptr;
         ANeuralNetworksExecution* execution = nullptr;
-        int32_t resultCode = ANEURALNETWORKS_NO_ERROR;
+        int32_t resultCode = kNnapiOk;
 
         resultCode = ANeuralNetworksModel_create(&model);
         const uint32_t dimensions[] = {4};
@@ -198,60 +197,60 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
         };
         const int32_t activation = kFusedNone;
 
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_addOperand(model, &scalarType);
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
+        if (resultCode == kNnapiOk) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
+        if (resultCode == kNnapiOk) resultCode = ANeuralNetworksModel_addOperand(model, &scalarType);
+        if (resultCode == kNnapiOk) resultCode = ANeuralNetworksModel_addOperand(model, &tensorType);
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksModel_setOperandValue(model, 2, &activation, sizeof(activation));
         }
 
         const uint32_t operationInputs[] = {0, 1, 2};
         const uint32_t operationOutputs[] = {3};
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksModel_addOperation(
                 model, kAdd, 3, operationInputs, 1, operationOutputs);
         }
         const uint32_t inputIndexes[] = {0, 1};
         const uint32_t outputIndexes[] = {3};
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksModel_identifyInputsAndOutputs(
                 model, 2, inputIndexes, 1, outputIndexes);
         }
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) resultCode = ANeuralNetworksModel_finish(model);
+        if (resultCode == kNnapiOk) resultCode = ANeuralNetworksModel_finish(model);
 
         const ANeuralNetworksDevice* selectedDevices[] = {candidate.first};
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksCompilation_createForDevices(
                 model, selectedDevices, 1, &compilation);
         }
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksCompilation_finish(compilation);
         }
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksExecution_create(compilation, &execution);
         }
 
         const std::array<float, 4> left = {1.0f, 2.0f, 3.0f, 4.0f};
         const std::array<float, 4> right = {3.5f, 4.5f, 5.5f, 6.5f};
         std::array<float, 4> output = {};
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksExecution_setInput(
                 execution, 0, nullptr, left.data(), sizeof(left));
         }
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksExecution_setInput(
                 execution, 1, nullptr, right.data(), sizeof(right));
         }
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksExecution_setOutput(
                 execution, 0, nullptr, output.data(), sizeof(output));
         }
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             resultCode = ANeuralNetworksExecution_compute(execution);
         }
 
-        bool matches = resultCode == ANEURALNETWORKS_NO_ERROR;
+        bool matches = resultCode == kNnapiOk;
         const std::array<float, 4> expected = {4.5f, 6.5f, 8.5f, 10.5f};
         for (size_t i = 0; i < output.size() && matches; ++i) {
             matches = std::fabs(output[i] - expected[i]) < 0.0001f;
@@ -271,7 +270,7 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
 
         lastError = "NNAPI accelerator compilation/execution failed with status " +
                     std::to_string(resultCode);
-        if (resultCode == ANEURALNETWORKS_NO_ERROR) {
+        if (resultCode == kNnapiOk) {
             lastError = "Accelerator returned an incorrect result for FLOAT32_ADD";
         }
     }
