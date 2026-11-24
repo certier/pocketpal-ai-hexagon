@@ -29,6 +29,7 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
   // already mapped by the time this is called. No System.loadLibrary
   // needed.
   private external fun nativePurgeAll(): Boolean
+  private external fun nativeGetNnapiInfo(): String
 
   override fun getName(): String = NativeHardwareInfoSpec.NAME
 
@@ -140,6 +141,43 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
 
       promise.resolve(gpuInfo)
     } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  override fun getNNAPIInfo(promise: Promise) {
+    try {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        promise.resolve(Arguments.createMap().apply {
+          putBoolean("available", false)
+          putString("error", "NNAPI device discovery requires Android 10 (API 29) or newer.")
+          putArray("devices", Arguments.createArray())
+        })
+        return
+      }
+
+      val response = JSONObject(nativeGetNnapiInfo())
+      val devices = Arguments.createArray()
+      val nativeDevices = response.optJSONArray("devices") ?: JSONArray()
+      for (index in 0 until nativeDevices.length()) {
+        val item = nativeDevices.optJSONObject(index) ?: continue
+        val device = Arguments.createMap()
+        device.putString("name", item.optString("name", "Unknown"))
+        device.putString("type", item.optString("type", "OTHER"))
+        val version = item.optString("version", "")
+        if (version.isNotEmpty()) device.putString("version", version)
+        val featureLevel = item.optDouble("featureLevel", -1.0)
+        if (featureLevel >= 0.0) device.putDouble("featureLevel", featureLevel)
+        devices.pushMap(device)
+      }
+
+      val result = Arguments.createMap()
+      result.putBoolean("available", response.optBoolean("available", false))
+      val error = response.optString("error", "")
+      if (error.isNotEmpty()) result.putString("error", error)
+      result.putArray("devices", devices)
+      promise.resolve(result)
+    } catch (e: Throwable) {
       promise.reject("ERROR", e.message)
     }
   }
