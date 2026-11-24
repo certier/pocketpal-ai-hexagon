@@ -33,17 +33,53 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
 
   override fun getName(): String = NativeHardwareInfoSpec.NAME
 
+  /**
+   * Resolve a useful SoC identifier across Android versions.
+   *
+   * Build.SOC_MODEL is only available from Android 12 (API 31), while many
+   * Snapdragon 662 phones shipped with Android 10/11. On those versions,
+   * Build.HARDWARE is commonly just "qcom" and Build.BOARD is a device
+   * codename, so inspect the public /proc/cpuinfo Hardware field as well.
+   */
+  private fun detectSocIdentifier(): String {
+    val candidates = mutableListOf<String>()
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      Build.SOC_MODEL.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
+    }
+
+    try {
+      File("/proc/cpuinfo").useLines { lines ->
+        lines.forEach { line ->
+          val key = line.substringBefore(':').trim()
+          if (key.equals("Hardware", ignoreCase = true) ||
+              key.equals("model name", ignoreCase = true) ||
+              key.equals("Processor", ignoreCase = true)) {
+            line.substringAfter(':', "").trim()
+              .takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
+          }
+        }
+      }
+    } catch (_: Exception) {
+      // /proc/cpuinfo may be restricted on some Android builds.
+    }
+
+    Build.HARDWARE.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
+    Build.BOARD.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
+
+    // Prefer a real Qualcomm SoC code or marketed Snapdragon name over
+    // generic board identifiers such as "qcom" or "lime".
+    return candidates.firstOrNull {
+      Regex("\\bSM[0-9]{4}\\b", RegexOption.IGNORE_CASE).containsMatchIn(it)
+    } ?: candidates.firstOrNull {
+      it.contains("Snapdragon", ignoreCase = true)
+    } ?: candidates.firstOrNull { it.isNotBlank() }
+      ?: "Unknown"
+  }
+
   override fun getChipset(promise: Promise) {
     try {
-      // Prefer SOC_MODEL (Android S+) for more specific chipset info
-      val chipset = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Build.SOC_MODEL.takeUnless { it.isNullOrEmpty() }
-          ?: Build.HARDWARE.takeUnless { it.isNullOrEmpty() }
-          ?: Build.BOARD
-      } else {
-        Build.HARDWARE.takeUnless { it.isNullOrEmpty() } ?: Build.BOARD
-      }
-      promise.resolve(chipset)
+      promise.resolve(detectSocIdentifier())
     } catch (e: Exception) {
       promise.reject("ERROR", e.message)
     }
@@ -238,12 +274,10 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
         cpuInfo.putBoolean("hasI8mm", features.any { it == "i8mm" })
       }
 
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        cpuInfo.putString("socModel", Build.SOC_MODEL)
-      }
+      // Resolve SoC identity on older Android releases too; Build.SOC_MODEL
+      // is unavailable before Android 12, but /proc/cpuinfo may expose SM6115.
+      cpuInfo.putString("socModel", detectSocIdentifier())
 
-      // HARDWARE is a distinct classifier signal from SOC_MODEL; do not
-      // coalesce them (getChipset hides one behind the other).
       Build.HARDWARE.takeUnless { it.isNullOrEmpty() }?.let {
         cpuInfo.putString("hardware", it)
       }
