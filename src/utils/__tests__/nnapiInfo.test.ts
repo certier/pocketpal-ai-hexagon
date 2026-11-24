@@ -55,7 +55,9 @@ describe('getNNAPIInfo', () => {
 
   it('contains native discovery errors instead of crashing the Device Info screen', async () => {
     Platform.OS = 'android';
-    getNNAPIInfoNative.mockRejectedValue(new Error('NNAPI symbols unavailable'));
+    getNNAPIInfoNative.mockRejectedValue(
+      new Error('NNAPI symbols unavailable'),
+    );
     const warning = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     await expect(getNNAPIInfo()).resolves.toMatchObject({
