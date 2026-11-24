@@ -161,7 +161,7 @@ Java_com_pocketpal_HardwareInfoModule_nativeRunNnapiSmokeTest(JNIEnv* env, jobje
             device == nullptr ||
             ANeuralNetworksDevice_getName(device, &name) != kNnapiOk ||
             ANeuralNetworksDevice_getType(device, &type) != kNnapiOk ||
-            type == 2 || type == 3) {
+            (type != kDeviceAccelerator && type != 1)) {
             continue;
         }
         std::string lowered = name == nullptr ? "" : name;
