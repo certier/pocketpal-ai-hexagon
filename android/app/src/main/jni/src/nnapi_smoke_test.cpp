@@ -1,9 +1,9 @@
-#include <android/NeuralNetworks.h>
+#include <NeuralNetworks.h>
 #include <dlfcn.h>
 #include <jni.h>
 
 #include <array>
-#include <cmath>
+#include <cmath>\n#include <cctype>
 #include <cstdint>
 #include <sstream>
 #include <string>
