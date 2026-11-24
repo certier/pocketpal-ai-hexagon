@@ -1,7 +1,13 @@
 import {Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import {getBackendDevicesInfo} from 'llama.rn';
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
-import type {CPUInfo, GPUInfo} from '../specs/NativeHardwareInfo';
+import type {
+  CPUInfo,
+  GPUInfo,
+  NNAPIInfo,
+  NNAPISmokeTestResult,
+} from '../specs/NativeHardwareInfo';
 
 /**
  * Device GPU capabilities result
@@ -21,6 +27,7 @@ export interface GpuCapabilities {
     hasAdreno?: boolean;
     hasI8mm?: boolean;
     hasDotProd?: boolean;
+    hasOpenCLBackend?: boolean;
     iosVersion?: number;
     isSimulator?: boolean;
   };
@@ -92,7 +99,20 @@ export async function checkGpuSupport(): Promise<GpuCapabilities> {
       const hasDotProd = cpuInfo.hasDotProd ?? false;
 
       // All three conditions must be met for OpenCL support
-      const isSupported = hasAdreno && hasI8mm && hasDotProd;
+      let hasOpenCLBackend = false;
+      try {
+        const backendDevices = await getBackendDevicesInfo();
+        hasOpenCLBackend = (backendDevices || []).some(
+          device =>
+            device.type === 'gpu' &&
+            device.backend?.toLowerCase().includes('opencl'),
+        );
+      } catch {
+        // No discovered GGML OpenCL device: keep the capability disabled.
+      }
+
+      const isSupported =
+        hasAdreno && hasI8mm && hasDotProd && hasOpenCLBackend;
 
       let reason: GpuCapabilities['reason'];
       if (!isSupported) {
@@ -112,6 +132,7 @@ export async function checkGpuSupport(): Promise<GpuCapabilities> {
           hasAdreno,
           hasI8mm,
           hasDotProd,
+          hasOpenCLBackend,
         },
       };
     } catch (error) {
@@ -128,6 +149,57 @@ export async function checkGpuSupport(): Promise<GpuCapabilities> {
     isSupported: false,
     reason: 'unknown',
   };
+}
+
+/**
+ * Read the Android NNAPI device inventory.
+ *
+ * This only reports devices exposed by the OS. It does not claim that a
+ * Qualcomm DSP is usable or that an LLM graph will execute on it.
+ */
+export async function getNNAPIInfo(): Promise<NNAPIInfo> {
+  if (Platform.OS !== 'android') {
+    return {
+      available: false,
+      error: 'NNAPI device discovery is Android-only.',
+      devices: [],
+    };
+  }
+
+  try {
+    return await NativeHardwareInfo.getNNAPIInfo();
+  } catch (error) {
+    console.warn('Failed to enumerate NNAPI devices:', error);
+    return {
+      available: false,
+      error: error instanceof Error ? error.message : 'NNAPI discovery failed.',
+      devices: [],
+    };
+  }
+}
+
+/**
+ * Execute a minimal FLOAT32_ADD graph with explicit Qualcomm accelerator
+ * assignment. Success proves only this operation on this driver, not GGUF support.
+ */
+export async function runNNAPISmokeTest(): Promise<NNAPISmokeTestResult> {
+  if (Platform.OS !== 'android') {
+    return {
+      available: false,
+      executionVerified: false,
+      error: 'NNAPI execution is Android-only.',
+    };
+  }
+  try {
+    return await NativeHardwareInfo.runNNAPISmokeTest();
+  } catch (error) {
+    return {
+      available: false,
+      executionVerified: false,
+      error:
+        error instanceof Error ? error.message : 'NNAPI execution test failed.',
+    };
+  }
 }
 
 /**
@@ -226,7 +298,27 @@ export async function isHighEndDevice(): Promise<boolean> {
 export async function getGpuInfo(): Promise<GPUInfo | null> {
   try {
     const info = await NativeHardwareInfo.getGPUInfo();
-    return info || null;
+    if (!info) {
+      return null;
+    }
+
+    if (Platform.OS !== 'android') {
+      return info;
+    }
+
+    // An Adreno renderer string alone is not proof that llama.cpp's OpenCL
+    // backend was compiled, loaded and exposed on this device.
+    try {
+      const backendDevices = await getBackendDevicesInfo();
+      const hasOpenCLBackend = (backendDevices || []).some(
+        device =>
+          device.type === 'gpu' &&
+          device.backend?.toLowerCase().includes('opencl'),
+      );
+      return {...info, supportsOpenCL: hasOpenCLBackend};
+    } catch {
+      return {...info, supportsOpenCL: false};
+    }
   } catch (error) {
     console.warn('Failed to get GPU info:', error);
     return null;

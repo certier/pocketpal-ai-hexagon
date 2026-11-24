@@ -1507,6 +1507,7 @@
         "cpuDetails": "CPU Details",
         "gpuDetails": "GPU Details",
         "hexagonDetails": "Hexagon DSP",
+        "nnapiDetails": "NNAPI Devices",
         "appInfo": "App Info"
       },
       "fields": {
@@ -1523,13 +1524,18 @@
         "gpuVendor": "Vendor",
         "metalSupport": "Metal Support",
         "openclSupport": "OpenCL Support",
-        "openclRequirement": "Requires i8mm & dotprod"
+        "openclRequirement": "Requires i8mm & dotprod",
+        "nnapiDiscovery": "NNAPI discovery"
       },
       "instructions": {
         "format": "FP16: {{fp16}}, DotProd: {{dotProd}}, SVE: {{sve}}, I8MM: {{i8mm}}",
         "yes": "✓",
         "no": "✗"
       },
+      "nnapiUnavailable": "NNAPI device discovery is unavailable on this Android build.",
+      "nnapiNoDevices": "Android did not expose any NNAPI devices.",
+      "nnapiNote": "A listed accelerator does not prove that a model runs on the DSP. An explicit accelerator-only inference test is still required.",
+      "v66Status": "Hardware present; NNAPI access and GGUF acceleration are unverified.",
       "versionFormat": "{{version}} ({{buildNumber}})"
     }
   },

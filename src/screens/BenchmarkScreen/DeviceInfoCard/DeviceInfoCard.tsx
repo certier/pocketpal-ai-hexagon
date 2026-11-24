@@ -18,9 +18,16 @@ import {
   getCpuInfo,
   getGpuInfo,
   getChipsetInfo,
+  getNNAPIInfo,
+  runNNAPISmokeTest,
 } from '../../../utils/deviceCapabilities';
+import type {
+  NNAPIInfo,
+  NNAPISmokeTestResult,
+} from '../../../specs/NativeHardwareInfo';
 import {
   getHexagonInfo,
+  getHexagonDisplayName,
   type HexagonInfo,
 } from '../../../utils/hexagonDetection';
 
@@ -77,7 +84,14 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
       | undefined,
   });
   const [hexagonInfo, setHexagonInfo] = useState<HexagonInfo[]>([]);
+  const [nnapiInfo, setNnapiInfo] = useState<NNAPIInfo>({
+    available: false,
+    devices: [],
+  });
   const [expanded, setExpanded] = useState(false);
+  const [nnapiTestRunning, setNnapiTestRunning] = useState(false);
+  const [nnapiTestResult, setNnapiTestResult] =
+    useState<NNAPISmokeTestResult | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -153,6 +167,7 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
           getHexagonInfo(socIdentifier || undefined).then(hexInfo => {
             setHexagonInfo(hexInfo);
           });
+          getNNAPIInfo().then(setNnapiInfo);
         }
       },
     );
@@ -352,13 +367,89 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
                 {hexagonInfo.map(info => (
                   <View key={info.version} style={styles.deviceInfoRow}>
                     <Text variant="bodySmall" style={styles.deviceInfoValue}>
-                      Hexagon {info.version} | {info.soc}{' '}
-                      {info.supported
-                        ? l10n.benchmark.deviceInfoCard.instructions.yes
-                        : l10n.benchmark.deviceInfoCard.instructions.no}
+                      {getHexagonDisplayName(info.version)} | {info.soc}{' '}
+                      {info.version === '66'
+                        ? l10n.benchmark.deviceInfoCard.v66Status
+                        : info.supported
+                          ? l10n.benchmark.deviceInfoCard.instructions.yes
+                          : l10n.benchmark.deviceInfoCard.instructions.no}
                     </Text>
                   </View>
                 ))}
+              </View>
+            )}
+
+            {/* NNAPI discovery is deliberately not presented as proof of DSP execution. */}
+            {Platform.OS === 'android' && (
+              <View style={styles.section}>
+                <Text variant="labelSmall" style={styles.sectionTitle}>
+                  {l10n.benchmark.deviceInfoCard.sections.nnapiDetails}
+                </Text>
+                <View style={styles.deviceInfoRow}>
+                  <Text variant="labelSmall" style={styles.deviceInfoLabel}>
+                    {l10n.benchmark.deviceInfoCard.fields.nnapiDiscovery}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {nnapiInfo.available
+                      ? l10n.benchmark.deviceInfoCard.instructions.yes
+                      : l10n.benchmark.deviceInfoCard.instructions.no}
+                  </Text>
+                </View>
+                {!nnapiInfo.available ? (
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {nnapiInfo.error ||
+                      l10n.benchmark.deviceInfoCard.nnapiUnavailable}
+                  </Text>
+                ) : nnapiInfo.devices.length === 0 ? (
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {l10n.benchmark.deviceInfoCard.nnapiNoDevices}
+                  </Text>
+                ) : (
+                  nnapiInfo.devices.map((device, index) => (
+                    <View
+                      key={`${device.name}-${index}`}
+                      style={styles.deviceInfoRow}>
+                      <Text variant="labelSmall" style={styles.deviceInfoLabel}>
+                        {device.type}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                        {device.name}
+                        {device.version ? ` • ${device.version}` : ''}
+                        {typeof device.featureLevel === 'number'
+                          ? ` • NNAPI ${device.featureLevel}`
+                          : ''}
+                      </Text>
+                    </View>
+                  ))
+                )}
+                <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                  {l10n.benchmark.deviceInfoCard.nnapiNote}
+                </Text>
+                <TouchableOpacity
+                  disabled={nnapiTestRunning}
+                  onPress={() => {
+                    setNnapiTestRunning(true);
+                    runNNAPISmokeTest()
+                      .then(setNnapiTestResult)
+                      .finally(() => setNnapiTestRunning(false));
+                  }}
+                  style={{paddingVertical: 10}}>
+                  <Text variant="labelLarge" style={styles.deviceInfoValue}>
+                    {nnapiTestRunning
+                      ? 'Testing Qualcomm NNAPI accelerator…'
+                      : 'Run Qualcomm DSP execution test'}
+                  </Text>
+                </TouchableOpacity>
+                {nnapiTestResult && (
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {nnapiTestResult.executionVerified
+                      ? `PASS: ${nnapiTestResult.deviceName} executed FLOAT32_ADD and returned the correct output.`
+                      : `NOT VERIFIED: ${
+                          nnapiTestResult.error ||
+                          'No Qualcomm accelerator execution was confirmed.'
+                        }`}
+                  </Text>
+                )}
               </View>
             )}
 

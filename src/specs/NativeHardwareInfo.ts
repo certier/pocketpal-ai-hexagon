@@ -32,9 +32,46 @@ export interface GPUInfo {
   gpuType: string;
 }
 
+export interface NNAPIDeviceInfo {
+  /** Driver-reported device name. Does not by itself prove DSP execution. */
+  name: string;
+  /** OTHER, CPU, GPU or ACCELERATOR as reported by NNAPI. */
+  type: string;
+  /** Vendor driver version, when supplied by the driver. */
+  version?: string;
+  /** NNAPI feature level, when supplied by Android. */
+  featureLevel?: number;
+}
+
+export interface NNAPISmokeTestResult {
+  available: boolean;
+  /** True only after compilation explicitly targeted a Qualcomm accelerator and output matched. */
+  executionVerified: boolean;
+  outputMatched?: boolean;
+  deviceName?: string;
+  operation?: string;
+  error?: string;
+  status?: number;
+}
+
+export interface NNAPIInfo {
+  /** True when Android's NNAPI device-inventory API could be queried. */
+  available: boolean;
+  /** Present when enumeration is unavailable or failed. */
+  error?: string;
+  devices: NNAPIDeviceInfo[];
+}
+
 export interface Spec extends TurboModule {
   getCPUInfo(): Promise<CPUInfo>;
   getGPUInfo(): Promise<GPUInfo>;
+  /**
+   * Enumerate Android NNAPI devices. This is hardware/driver discovery only;
+   * it does not prove that an accelerator can execute a given model.
+   */
+  getNNAPIInfo(): Promise<NNAPIInfo>;
+  /** Runs a tiny FLOAT32_ADD graph explicitly on a Qualcomm NNAPI accelerator. */
+  runNNAPISmokeTest(): Promise<NNAPISmokeTestResult>;
   getChipset?(): Promise<string>; // Android only
   /**
    * Get available memory in bytes from the operating system.

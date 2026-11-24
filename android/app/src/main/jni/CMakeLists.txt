@@ -24,7 +24,7 @@ project(appmodules)
 
 include(${REACT_ANDROID_DIR}/cmake-utils/ReactNative-application.cmake)
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/hardware_info.cpp)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/hardware_info.cpp src/nnapi_smoke_test.cpp)
 
 find_library(log-lib log)
 target_link_libraries(${CMAKE_PROJECT_NAME} ${log-lib})

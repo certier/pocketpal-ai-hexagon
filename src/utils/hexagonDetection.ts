@@ -5,7 +5,7 @@
 
 import {getAvailableDevices} from './deviceSelection';
 
-export type HexagonVersion = '690' | '730' | '750' | '790' | '810';
+export type HexagonVersion = '66' | '690' | '730' | '750' | '790' | '810';
 
 export interface HexagonInfo {
   version: HexagonVersion;
@@ -21,6 +21,10 @@ const HEXAGON_VERSION_MAP: Record<
   HexagonVersion,
   {socs: string[]; displayName: string}
 > = {
+  '66': {
+    socs: ['Snapdragon 662', 'SM6115'],
+    displayName: 'Hexagon V66 DSP',
+  },
   '690': {
     socs: ['Snapdragon 855', 'Snapdragon 865', 'SM8150', 'SM8250'],
     displayName: 'Hexagon 690',
@@ -79,8 +83,8 @@ export function getHexagonDisplayName(version: HexagonVersion): string {
  * Check if a Hexagon version is supported by the app
  */
 export function isHexagonVersionSupported(version: HexagonVersion): boolean {
-  // All versions in the map are supported
-  return version in HEXAGON_VERSION_MAP;
+  // V66 is recognized as hardware, but this fork has no V66 GGUF backend yet.
+  return version !== '66' && version in HEXAGON_VERSION_MAP;
 }
 
 /**
@@ -90,13 +94,27 @@ export function isHexagonVersionSupported(version: HexagonVersion): boolean {
  */
 export async function getHexagonInfo(chipset?: string): Promise<HexagonInfo[]> {
   try {
+    // Detect V66 from the SoC before asking llama.rn for HTP backend devices.
+    // V66 is not an HTP device and must not attempt the modern HTP selection.
+    const version = detectHexagonVersion(chipset);
+
+    // V66 is a DSP architecture, not an HTP device. Older Android firmware
+    // may expose it through NNAPI rather than an HTP backend device. Report
+    // the hardware generation, but do not mark it as GGUF-backend supported.
+    if (version === '66') {
+      return [
+        {
+          version,
+          deviceName: 'V66 DSP (GGUF acceleration unavailable)',
+          soc: 'Snapdragon 662 / SM6115',
+          supported: false,
+        },
+      ];
+    }
+
     const devices = await getAvailableDevices();
     const hexagonDevices = devices.filter(d => d.deviceName?.startsWith('HTP'));
-
     const hexagonInfo: HexagonInfo[] = [];
-
-    // Detect version from chipset (all HTP devices share same version on a device)
-    const version = detectHexagonVersion(chipset);
 
     if (version && hexagonDevices.length > 0) {
       hexagonInfo.push({
