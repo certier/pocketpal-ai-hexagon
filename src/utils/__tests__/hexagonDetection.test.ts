@@ -1,8 +1,5 @@
 import {getAvailableDevices} from '../deviceSelection';
-import {
-  getHexagonInfo,
-  isHexagonVersionSupported,
-} from '../hexagonDetection';
+import {getHexagonInfo, isHexagonVersionSupported} from '../hexagonDetection';
 
 jest.mock('../deviceSelection', () => ({
   getAvailableDevices: jest.fn(),
