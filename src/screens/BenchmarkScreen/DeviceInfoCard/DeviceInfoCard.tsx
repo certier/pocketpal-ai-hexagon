@@ -360,9 +360,11 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
                   <View key={info.version} style={styles.deviceInfoRow}>
                     <Text variant="bodySmall" style={styles.deviceInfoValue}>
                       Hexagon {info.version} | {info.soc}{' '}
-                      {info.supported
-                        ? l10n.benchmark.deviceInfoCard.instructions.yes
-                        : l10n.benchmark.deviceInfoCard.instructions.no}
+                      {info.version === '66'
+                        ? l10n.benchmark.deviceInfoCard.v66Status
+                        : info.supported
+                          ? l10n.benchmark.deviceInfoCard.instructions.yes
+                          : l10n.benchmark.deviceInfoCard.instructions.no}
                     </Text>
                   </View>
                 ))}
