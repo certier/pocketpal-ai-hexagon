@@ -107,3 +107,31 @@ A Redmi 9T build is not "Hexagon accelerated" until a repeatable test demonstrat
 - end-to-end latency is better than the CPU/GPU baseline after transfer and setup overhead.
 
 Until those conditions pass, PocketPal should label V66 as **hardware present / acceleration unverified**, not as a supported GGUF backend.
+
+
+## Current branch implementation status
+
+The diagnostics branch now contains an explicit NNAPI smoke test in
+`android/app/src/main/jni/src/nnapi_smoke_test.cpp`. It:
+
+1. Enumerates NNAPI devices and filters to devices reported as dedicated accelerators with Qualcomm/QTI/Hexagon naming.
+2. Builds a tiny FLOAT32 ADD graph.
+3. Calls `ANeuralNetworksCompilation_createForDevices` with only that one accelerator (never the NNAPI reference CPU).
+4. Executes the graph and verifies the exact expected output.
+5. Reports `executionVerified=true` only when explicit accelerator compilation and execution succeed and the output matches.
+
+The Benchmark screen's Device Info card exposes this as **Run Qualcomm DSP execution test**. A pass proves only that the specific driver executed this small FLOAT32 ADD graph. It does not prove that quantized GEMM, attention, normalization, rotary embeddings, KV-cache updates, or a GGUF model can execute on that DSP.
+
+## Why "all models" cannot be promised by NNAPI
+
+NNAPI is an operator API, not a GGUF runtime. A GGUF file contains model weights and metadata for a particular architecture and quantization; llama.cpp executes a graph of GGML operations. To accelerate it, PocketPal needs a GGML-to-NNAPI lowering layer that can:
+
+- map each model's supported GGML operations and tensor layouts to NNAPI operands;
+- convert or dequantize the model's quantized weight formats where the NNAPI driver requires different formats;
+- partition the graph into DSP-supported subgraphs while preserving CPU execution for unsupported nodes;
+- keep weights, activations, and KV-cache state resident efficiently to avoid transfer overhead;
+- validate numerical tolerances and output correctness per operation and model family.
+
+There is no universal guarantee that a vendor driver accepts every operator, tensor shape, data type, or quantization. The correct product behavior is per-model/per-operation capability reporting with CPU fallback—not a global "all models supported" switch.
+
+The current branch has the explicit accelerator smoke-test foundation, **not** a GGUF NNAPI backend. Do not select NNAPI as an LLM device until a real GGML adapter and end-to-end model tests exist.
