@@ -66,15 +66,24 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
 
     Build.HARDWARE.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
     Build.BOARD.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
+    Build.DEVICE.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
+    Build.PRODUCT.takeUnless { it.isNullOrBlank() }?.let { candidates.add(it) }
 
     // Prefer a real Qualcomm SoC code or marketed Snapdragon name over
-    // generic board identifiers such as "qcom" or "lime".
+    // generic board identifiers such as "qcom". Redmi 9T's device codename
+    // is "lime"; some Android 11 vendor builds omit SM6115 from cpuinfo.
     return candidates.firstOrNull {
       Regex("\\bSM[0-9]{4}\\b", RegexOption.IGNORE_CASE).containsMatchIn(it)
     } ?: candidates.firstOrNull {
       it.contains("Snapdragon", ignoreCase = true)
-    } ?: candidates.firstOrNull { it.isNotBlank() }
-      ?: "Unknown"
+    } ?: if (candidates.any {
+      it.equals("lime", ignoreCase = true) ||
+        it.startsWith("lime_", ignoreCase = true)
+    }) {
+      "Snapdragon 662 (Redmi 9T / lime)"
+    } else {
+      candidates.firstOrNull { it.isNotBlank() } ?: "Unknown"
+    }
   }
 
   override fun getChipset(promise: Promise) {
