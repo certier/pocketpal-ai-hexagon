@@ -2,7 +2,9 @@
 #include <jni.h>
 
 #include <array>
-#include <cmath>\n#include <cctype>
+#include <cmath>
+#include <cctype>
+#include <utility>
 #include <cstdint>
 #include <sstream>
 #include <string>
@@ -23,7 +25,6 @@ struct ANeuralNetworksOperandType {
 };
 
 constexpr int32_t kNnapiOk = 0;
-constexpr int32_t kDeviceUnknown = 0;
 constexpr int32_t kDeviceAccelerator = 4;
 constexpr int32_t kTensorFloat32 = 3;
 constexpr int32_t kInt32 = 2;
