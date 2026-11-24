@@ -29,7 +29,7 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
   // already mapped by the time this is called. No System.loadLibrary
   // needed.
   private external fun nativePurgeAll(): Boolean
-  private external fun nativeGetNnapiInfo(): String
+  private external fun nativeGetNnapiInfo(): String\n  private external fun nativeRunNnapiSmokeTest(): String
 
   override fun getName(): String = NativeHardwareInfoSpec.NAME
 
@@ -224,6 +224,34 @@ class HardwareInfoModule(reactContext: ReactApplicationContext) :
       promise.resolve(result)
     } catch (e: Throwable) {
       promise.reject("ERROR", e.message)
+    }
+  }
+
+
+  override fun runNNAPISmokeTest(promise: Promise) {
+    try {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        promise.resolve(Arguments.createMap().apply {
+          putBoolean("available", false)
+          putBoolean("executionVerified", false)
+          putString("error", "NNAPI accelerator assignment requires Android 10 (API 29) or newer.")
+        })
+        return
+      }
+
+      val response = JSONObject(nativeRunNnapiSmokeTest())
+      val result = Arguments.createMap()
+      result.putBoolean("available", response.optBoolean("available", false))
+      result.putBoolean("executionVerified", response.optBoolean("executionVerified", false))
+      if (response.has("outputMatched")) result.putBoolean("outputMatched", response.optBoolean("outputMatched"))
+      listOf("deviceName", "operation", "error").forEach { key ->
+        val value = response.optString(key, "")
+        if (value.isNotEmpty()) result.putString(key, value)
+      }
+      if (response.has("status")) result.putInt("status", response.optInt("status"))
+      promise.resolve(result)
+    } catch (e: Throwable) {
+      promise.reject("NNAPI_SMOKE_TEST_ERROR", e.message, e)
     }
   }
 
