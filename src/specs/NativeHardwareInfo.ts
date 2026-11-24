@@ -69,7 +69,9 @@ export interface Spec extends TurboModule {
    * Enumerate Android NNAPI devices. This is hardware/driver discovery only;
    * it does not prove that an accelerator can execute a given model.
    */
-  getNNAPIInfo(): Promise<NNAPIInfo>;\n  /** Runs a tiny FLOAT32_ADD graph explicitly on a Qualcomm NNAPI accelerator. */\n  runNNAPISmokeTest(): Promise<NNAPISmokeTestResult>;
+  getNNAPIInfo(): Promise<NNAPIInfo>;
+  /** Runs a tiny FLOAT32_ADD graph explicitly on a Qualcomm NNAPI accelerator. */
+  runNNAPISmokeTest(): Promise<NNAPISmokeTestResult>;
   getChipset?(): Promise<string>; // Android only
   /**
    * Get available memory in bytes from the operating system.
