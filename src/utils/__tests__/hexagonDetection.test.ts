@@ -17,7 +17,7 @@ describe('Hexagon generation detection', () => {
     await expect(getHexagonInfo('Qualcomm SM6115')).resolves.toEqual([
       {
         version: '66',
-        deviceName: 'NNAPI candidate (execution unverified)',
+        deviceName: 'V66 DSP (GGUF acceleration unavailable)',
         soc: 'Snapdragon 662 / SM6115',
         supported: false,
       },
