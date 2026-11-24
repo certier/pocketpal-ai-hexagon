@@ -90,9 +90,8 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
   });
   const [expanded, setExpanded] = useState(false);
   const [nnapiTestRunning, setNnapiTestRunning] = useState(false);
-  const [nnapiTestResult, setNnapiTestResult] = useState<
-    NNAPISmokeTestResult | null
-  >(null);
+  const [nnapiTestResult, setNnapiTestResult] =
+    useState<NNAPISmokeTestResult | null>(null);
 
   useEffect(() => {
     Promise.all([
