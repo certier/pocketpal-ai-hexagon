@@ -83,8 +83,8 @@ export function getHexagonDisplayName(version: HexagonVersion): string {
  * Check if a Hexagon version is supported by the app
  */
 export function isHexagonVersionSupported(version: HexagonVersion): boolean {
-  // All versions in the map are supported
-  return version in HEXAGON_VERSION_MAP;
+  // V66 is recognized as hardware, but this fork has no V66 GGUF backend yet.
+  return version !== '66' && version in HEXAGON_VERSION_MAP;
 }
 
 /**
