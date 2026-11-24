@@ -1,7 +1,7 @@
 import {Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
-import type {CPUInfo, GPUInfo} from '../specs/NativeHardwareInfo';
+import type {CPUInfo, GPUInfo, NNAPIInfo} from '../specs/NativeHardwareInfo';
 
 /**
  * Device GPU capabilities result
@@ -128,6 +128,33 @@ export async function checkGpuSupport(): Promise<GpuCapabilities> {
     isSupported: false,
     reason: 'unknown',
   };
+}
+
+/**
+ * Read the Android NNAPI device inventory.
+ *
+ * This only reports devices exposed by the OS. It does not claim that a
+ * Qualcomm DSP is usable or that an LLM graph will execute on it.
+ */
+export async function getNNAPIInfo(): Promise<NNAPIInfo> {
+  if (Platform.OS !== 'android') {
+    return {
+      available: false,
+      error: 'NNAPI device discovery is Android-only.',
+      devices: [],
+    };
+  }
+
+  try {
+    return await NativeHardwareInfo.getNNAPIInfo();
+  } catch (error) {
+    console.warn('Failed to enumerate NNAPI devices:', error);
+    return {
+      available: false,
+      error: error instanceof Error ? error.message : 'NNAPI discovery failed.',
+      devices: [],
+    };
+  }
 }
 
 /**
