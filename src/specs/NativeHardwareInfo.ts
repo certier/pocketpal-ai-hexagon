@@ -43,7 +43,7 @@ export interface NNAPIDeviceInfo {
   featureLevel?: number;
 }
 
-export interface NNAPIInfo {
+export interface NNAPISmokeTestResult {\n  available: boolean;\n  /** True only after compilation explicitly targeted a Qualcomm accelerator and output matched. */\n  executionVerified: boolean;\n  outputMatched?: boolean;\n  deviceName?: string;\n  operation?: string;\n  error?: string;\n  status?: number;\n}\n\nexport interface NNAPIInfo {
   /** True when Android's NNAPI device-inventory API could be queried. */
   available: boolean;
   /** Present when enumeration is unavailable or failed. */
@@ -58,7 +58,7 @@ export interface Spec extends TurboModule {
    * Enumerate Android NNAPI devices. This is hardware/driver discovery only;
    * it does not prove that an accelerator can execute a given model.
    */
-  getNNAPIInfo(): Promise<NNAPIInfo>;
+  getNNAPIInfo(): Promise<NNAPIInfo>;\n  /** Runs a tiny FLOAT32_ADD graph explicitly on a Qualcomm NNAPI accelerator. */\n  runNNAPISmokeTest(): Promise<NNAPISmokeTestResult>;
   getChipset?(): Promise<string>; // Android only
   /**
    * Get available memory in bytes from the operating system.
