@@ -2,7 +2,12 @@ import {Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import {getBackendDevicesInfo} from 'llama.rn';
 import NativeHardwareInfo from '../specs/NativeHardwareInfo';
-import type {CPUInfo, GPUInfo, NNAPIInfo, NNAPISmokeTestResult} from '../specs/NativeHardwareInfo';
+import type {
+  CPUInfo,
+  GPUInfo,
+  NNAPIInfo,
+  NNAPISmokeTestResult,
+} from '../specs/NativeHardwareInfo';
 
 /**
  * Device GPU capabilities result
@@ -179,7 +184,11 @@ export async function getNNAPIInfo(): Promise<NNAPIInfo> {
  */
 export async function runNNAPISmokeTest(): Promise<NNAPISmokeTestResult> {
   if (Platform.OS !== 'android') {
-    return {available: false, executionVerified: false, error: 'NNAPI execution is Android-only.'};
+    return {
+      available: false,
+      executionVerified: false,
+      error: 'NNAPI execution is Android-only.',
+    };
   }
   try {
     return await NativeHardwareInfo.runNNAPISmokeTest();
@@ -187,7 +196,10 @@ export async function runNNAPISmokeTest(): Promise<NNAPISmokeTestResult> {
     return {
       available: false,
       executionVerified: false,
-      error: error instanceof Error ? error.message : 'NNAPI execution test failed.',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'NNAPI execution test failed.',
     };
   }
 }
