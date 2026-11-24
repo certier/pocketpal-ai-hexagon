@@ -96,9 +96,10 @@ static std::string nnapi_json_escape(const char* value) {
 
 static const char* nnapi_device_type_name(int32_t type) {
     switch (type) {
-        case 1: return "CPU";
-        case 2: return "GPU";
-        case 3: return "ACCELERATOR";
+        case 1: return "OTHER";
+        case 2: return "CPU";
+        case 3: return "GPU";
+        case 4: return "ACCELERATOR";
         default: return "OTHER";
     }
 }
