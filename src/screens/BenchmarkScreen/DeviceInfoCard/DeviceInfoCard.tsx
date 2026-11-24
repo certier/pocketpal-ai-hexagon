@@ -23,6 +23,7 @@ import {
 import type {NNAPIInfo} from '../../../specs/NativeHardwareInfo';
 import {
   getHexagonInfo,
+  getHexagonDisplayName,
   type HexagonInfo,
 } from '../../../utils/hexagonDetection';
 
@@ -359,7 +360,7 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
                 {hexagonInfo.map(info => (
                   <View key={info.version} style={styles.deviceInfoRow}>
                     <Text variant="bodySmall" style={styles.deviceInfoValue}>
-                      Hexagon {info.version} | {info.soc}{' '}
+                      {getHexagonDisplayName(info.version)} | {info.soc}{' '}
                       {info.version === '66'
                         ? l10n.benchmark.deviceInfoCard.v66Status
                         : info.supported
