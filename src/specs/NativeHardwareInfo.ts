@@ -43,7 +43,18 @@ export interface NNAPIDeviceInfo {
   featureLevel?: number;
 }
 
-export interface NNAPISmokeTestResult {\n  available: boolean;\n  /** True only after compilation explicitly targeted a Qualcomm accelerator and output matched. */\n  executionVerified: boolean;\n  outputMatched?: boolean;\n  deviceName?: string;\n  operation?: string;\n  error?: string;\n  status?: number;\n}\n\nexport interface NNAPIInfo {
+export interface NNAPISmokeTestResult {
+  available: boolean;
+  /** True only after compilation explicitly targeted a Qualcomm accelerator and output matched. */
+  executionVerified: boolean;
+  outputMatched?: boolean;
+  deviceName?: string;
+  operation?: string;
+  error?: string;
+  status?: number;
+}
+
+export interface NNAPIInfo {
   /** True when Android's NNAPI device-inventory API could be queried. */
   available: boolean;
   /** Present when enumeration is unavailable or failed. */
