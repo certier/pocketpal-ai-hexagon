@@ -5,7 +5,7 @@
 
 import {getAvailableDevices} from './deviceSelection';
 
-export type HexagonVersion = '690' | '730' | '750' | '790' | '810';
+export type HexagonVersion = '66' | '690' | '730' | '750' | '790' | '810';
 
 export interface HexagonInfo {
   version: HexagonVersion;
@@ -21,6 +21,10 @@ const HEXAGON_VERSION_MAP: Record<
   HexagonVersion,
   {socs: string[]; displayName: string}
 > = {
+  '66': {
+    socs: ['Snapdragon 662', 'SM6115'],
+    displayName: 'Hexagon V66 DSP',
+  },
   '690': {
     socs: ['Snapdragon 855', 'Snapdragon 865', 'SM8150', 'SM8250'],
     displayName: 'Hexagon 690',
@@ -97,6 +101,18 @@ export async function getHexagonInfo(chipset?: string): Promise<HexagonInfo[]> {
 
     // Detect version from chipset (all HTP devices share same version on a device)
     const version = detectHexagonVersion(chipset);
+
+    // V66 is a DSP architecture, not an HTP device. Older Android firmware
+    // may expose it through NNAPI rather than an HTP backend device. Report
+    // the hardware generation, but do not mark it as GGUF-backend supported.
+    if (version === '66') {
+      return [{
+        version,
+        deviceName: 'NNAPI candidate (execution unverified)',
+        soc: 'Snapdragon 662 / SM6115',
+        supported: false,
+      }];
+    }
 
     if (version && hexagonDevices.length > 0) {
       hexagonInfo.push({
