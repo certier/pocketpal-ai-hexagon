@@ -68,21 +68,21 @@ using nnapi_device_get_version_fn = int32_t (*)(const ANeuralNetworksDevice*, co
 using nnapi_device_get_feature_level_fn = int32_t (*)(const ANeuralNetworksDevice*, int64_t*);
 
 static std::string nnapi_json_escape(const char* value) {
-    std::string out = "\\\"";
+    std::string out = "\"";
     const std::string input = value == nullptr ? "" : value;
     for (unsigned char c : input) {
         switch (c) {
-            case '\\"': out += "\\\\\""; break;
-            case '\\\\': out += "\\\\\\"; break;
-            case '\\b': out += "\\\\b"; break;
-            case '\\f': out += "\\\\f"; break;
-            case '\\n': out += "\\\\n"; break;
-            case '\\r': out += "\\\\r"; break;
-            case '\\t': out += "\\\\t"; break;
+            case '"': out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\b': out += "\\b"; break;
+            case '\f': out += "\\f"; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
             default:
                 if (c < 0x20) {
                     static const char hex[] = "0123456789abcdef";
-                    out += "\\\\u00";
+                    out += "\\u00";
                     out += hex[(c >> 4) & 0x0f];
                     out += hex[c & 0x0f];
                 } else {
@@ -90,7 +90,7 @@ static std::string nnapi_json_escape(const char* value) {
                 }
         }
     }
-    out += "\\\"";
+    out += "\"";
     return out;
 }
 
@@ -109,9 +109,9 @@ Java_com_pocketpal_HardwareInfoModule_nativeGetNnapiInfo(JNIEnv* env, jobject /*
     if (nnapi == nullptr) {
         const char* error = dlerror();
         std::ostringstream json;
-        json << "{\\\"available\\\":false,\\\"error\\\":"
+        json << "{\"available\":false,\"error\":"
              << nnapi_json_escape(error == nullptr ? "Unable to load libneuralnetworks.so" : error)
-             << ",\\\"devices\\\":[]}";
+             << ",\"devices\":[]}";
         return env->NewStringUTF(json.str().c_str());
     }
 
@@ -132,8 +132,8 @@ Java_com_pocketpal_HardwareInfoModule_nativeGetNnapiInfo(JNIEnv* env, jobject /*
         getName == nullptr || getType == nullptr) {
         dlclose(nnapi);
         return env->NewStringUTF(
-            "{\\\"available\\\":false,\\\"error\\\":"
-            "\\\"NNAPI device-discovery symbols are unavailable\\\",\\\"devices\\\":[]}");
+            "{\"available\":false,\"error\":"
+            "\"NNAPI device-discovery symbols are unavailable\",\"devices\":[]}");
     }
 
     uint32_t deviceCount = 0;
@@ -141,10 +141,10 @@ Java_com_pocketpal_HardwareInfoModule_nativeGetNnapiInfo(JNIEnv* env, jobject /*
     if (countStatus != 0) {
         dlclose(nnapi);
         std::ostringstream json;
-        json << "{\\\"available\\\":false,\\\"error\\\":"
+        json << "{\"available\":false,\"error\":"
              << nnapi_json_escape(("ANeuralNetworks_getDeviceCount failed: " +
                                    std::to_string(countStatus)).c_str())
-             << ",\\\"devices\\\":[]}";
+             << ",\"devices\":[]}";
         return env->NewStringUTF(json.str().c_str());
     }
 
@@ -153,7 +153,7 @@ Java_com_pocketpal_HardwareInfoModule_nativeGetNnapiInfo(JNIEnv* env, jobject /*
     if (deviceCount > 64) deviceCount = 64;
 
     std::ostringstream json;
-    json << "{\\\"available\\\":true,\\\"devices\\\":[";
+    json << "{\"available\":true,\"devices\":[";
     bool first = true;
 
     for (uint32_t index = 0; index < deviceCount; ++index) {
@@ -172,10 +172,10 @@ Java_com_pocketpal_HardwareInfoModule_nativeGetNnapiInfo(JNIEnv* env, jobject /*
 
         if (!first) json << ",";
         first = false;
-        json << "{\\\"name\\\":" << nnapi_json_escape(name)
-             << ",\\\"type\\\":" << nnapi_json_escape(nnapi_device_type_name(type))
-             << ",\\\"version\\\":" << nnapi_json_escape(version)
-             << ",\\\"featureLevel\\\":" << featureLevel << "}";
+        json << "{\"name\":" << nnapi_json_escape(name)
+             << ",\"type\":" << nnapi_json_escape(nnapi_device_type_name(type))
+             << ",\"version\":" << nnapi_json_escape(version)
+             << ",\"featureLevel\":" << featureLevel << "}";
     }
 
     json << "]}";
