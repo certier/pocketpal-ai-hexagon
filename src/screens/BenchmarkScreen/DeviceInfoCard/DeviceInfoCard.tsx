@@ -21,7 +21,10 @@ import {
   getNNAPIInfo,
   runNNAPISmokeTest,
 } from '../../../utils/deviceCapabilities';
-import type {NNAPIInfo, NNAPISmokeTestResult} from '../../../specs/NativeHardwareInfo';
+import type {
+  NNAPIInfo,
+  NNAPISmokeTestResult,
+} from '../../../specs/NativeHardwareInfo';
 import {
   getHexagonInfo,
   getHexagonDisplayName,
@@ -87,7 +90,9 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
   });
   const [expanded, setExpanded] = useState(false);
   const [nnapiTestRunning, setNnapiTestRunning] = useState(false);
-  const [nnapiTestResult, setNnapiTestResult] = useState<NNAPISmokeTestResult | null>(null);
+  const [nnapiTestResult, setNnapiTestResult] = useState<
+    NNAPISmokeTestResult | null
+  >(null);
 
   useEffect(() => {
     Promise.all([
@@ -440,7 +445,10 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
                   <Text variant="bodySmall" style={styles.deviceInfoValue}>
                     {nnapiTestResult.executionVerified
                       ? `PASS: ${nnapiTestResult.deviceName} executed FLOAT32_ADD and returned the correct output.`
-                      : `NOT VERIFIED: ${nnapiTestResult.error || 'No Qualcomm accelerator execution was confirmed.'}`}
+                      : `NOT VERIFIED: ${
+                          nnapiTestResult.error ||
+                          'No Qualcomm accelerator execution was confirmed.'
+                        }`}
                   </Text>
                 )}
               </View>
