@@ -20,6 +20,26 @@ References:
 - https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/snapdragon-662-mobile-platform-product-brief.pdf
 - https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/OPENCL.md
 
+## Adreno 610: GPU fallback worth testing
+
+The Snapdragon 662 product brief lists Adreno 610 and Vulkan 1.1 / OpenCL 2.0 capability. That is a platform specification, not proof that the Redmi 9T's installed userspace driver works with a particular GGML backend.
+
+Current upstream llama.cpp documents Android OpenCL as verified on newer Adreno devices and warns that A6x GPUs in phones are likely unsupported because their drivers and compilers are old. Therefore the current OpenCL variant must not be assumed to work on Adreno 610.
+
+A community Vulkan compatibility database contains real Redmi 9T / Adreno 610 driver reports. This is useful evidence that Vulkan drivers are exposed on real devices, but its tests are graphics/game compatibility tests, not llama.cpp compute benchmarks.
+
+Engineering order:
+1. Query Vulkan instance/device properties and enumerate compute queue families on the Redmi 9T.
+2. Build a minimal Vulkan compute smoke test and validate output against CPU.
+3. Build llama.cpp's GGML Vulkan backend for Android arm64 and run a small matmul benchmark.
+4. Compare CPU, Vulkan and any available OpenCL path end-to-end, including model upload and memory-copy overhead.
+5. Only expose Vulkan layer offload in PocketPal after the exact device/driver passes correctness and stability tests.
+
+References:
+- https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/snapdragon-662-mobile-platform-product-brief.pdf
+- https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/OPENCL.md
+- https://fauxvkdb.canonspike.com/
+
 ## Important Android firmware limitation
 
 Qualcomm's AI Hub Apps issue #46 contains reports from Snapdragon 662 / V66 phones (Moto G Power and Galaxy Tab A7) where QNN DSP delegate initialization failed while loading the V66 skeleton library. A Qualcomm engineer explained that older consumer Android vendors commonly authorize NNAPI access but restrict direct QNN access; the application developer cannot necessarily override that vendor policy.
