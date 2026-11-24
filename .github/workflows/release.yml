@@ -258,7 +258,8 @@ jobs:
           tag_name: "v${{ env.VERSION }}"
           name: "Release v${{ env.VERSION }}"
           draft: false
-          prerelease: false
+          # Keep semver pre* bumps as GitHub pre-releases instead of publishing them as stable.
+          prerelease: ${{ startsWith(github.event.inputs.version_type, 'pre') }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
