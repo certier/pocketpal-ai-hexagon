@@ -29,6 +29,18 @@ RCT_EXPORT_METHOD(getCPUInfo:(RCTPromiseResolveBlock)resolve
   }
 }
 
+RCT_EXPORT_METHOD(getNNAPIInfo:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  // NNAPI is an Android-only API. Return the same stable shape so shared
+  // React Native code can consume the hardware-info module on both platforms.
+  resolve(@{
+    @"available": @NO,
+    @"error": @"NNAPI device discovery is Android-only.",
+    @"devices": @[]
+  });
+}
+
 RCT_EXPORT_METHOD(getGPUInfo:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
