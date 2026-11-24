@@ -19,8 +19,9 @@ import {
   getGpuInfo,
   getChipsetInfo,
   getNNAPIInfo,
+  runNNAPISmokeTest,
 } from '../../../utils/deviceCapabilities';
-import type {NNAPIInfo} from '../../../specs/NativeHardwareInfo';
+import type {NNAPIInfo, NNAPISmokeTestResult} from '../../../specs/NativeHardwareInfo';
 import {
   getHexagonInfo,
   getHexagonDisplayName,
@@ -85,6 +86,8 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
     devices: [],
   });
   const [expanded, setExpanded] = useState(false);
+  const [nnapiTestRunning, setNnapiTestRunning] = useState(false);
+  const [nnapiTestResult, setNnapiTestResult] = useState<NNAPISmokeTestResult | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -418,6 +421,28 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
                 <Text variant="bodySmall" style={styles.deviceInfoValue}>
                   {l10n.benchmark.deviceInfoCard.nnapiNote}
                 </Text>
+                <TouchableOpacity
+                  disabled={nnapiTestRunning}
+                  onPress={() => {
+                    setNnapiTestRunning(true);
+                    runNNAPISmokeTest()
+                      .then(setNnapiTestResult)
+                      .finally(() => setNnapiTestRunning(false));
+                  }}
+                  style={{paddingVertical: 10}}>
+                  <Text variant="labelLarge" style={styles.deviceInfoValue}>
+                    {nnapiTestRunning
+                      ? 'Testing Qualcomm NNAPI accelerator…'
+                      : 'Run Qualcomm DSP execution test'}
+                  </Text>
+                </TouchableOpacity>
+                {nnapiTestResult && (
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {nnapiTestResult.executionVerified
+                      ? `PASS: ${nnapiTestResult.deviceName} executed FLOAT32_ADD and returned the correct output.`
+                      : `NOT VERIFIED: ${nnapiTestResult.error || 'No Qualcomm accelerator execution was confirmed.'}`}
+                  </Text>
+                )}
               </View>
             )}
 
