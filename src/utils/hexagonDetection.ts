@@ -105,7 +105,7 @@ export async function getHexagonInfo(chipset?: string): Promise<HexagonInfo[]> {
       return [
         {
           version,
-          deviceName: 'NNAPI candidate (execution unverified)',
+          deviceName: 'V66 DSP (GGUF acceleration unavailable)',
           soc: 'Snapdragon 662 / SM6115',
           supported: false,
         },
