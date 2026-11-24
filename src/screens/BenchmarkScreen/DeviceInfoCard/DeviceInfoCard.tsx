@@ -18,7 +18,9 @@ import {
   getCpuInfo,
   getGpuInfo,
   getChipsetInfo,
+  getNNAPIInfo,
 } from '../../../utils/deviceCapabilities';
+import type {NNAPIInfo} from '../../../specs/NativeHardwareInfo';
 import {
   getHexagonInfo,
   type HexagonInfo,
@@ -77,6 +79,10 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
       | undefined,
   });
   const [hexagonInfo, setHexagonInfo] = useState<HexagonInfo[]>([]);
+  const [nnapiInfo, setNnapiInfo] = useState<NNAPIInfo>({
+    available: false,
+    devices: [],
+  });
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -153,6 +159,7 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
           getHexagonInfo(socIdentifier || undefined).then(hexInfo => {
             setHexagonInfo(hexInfo);
           });
+          getNNAPIInfo().then(setNnapiInfo);
         }
       },
     );
@@ -359,6 +366,55 @@ export const DeviceInfoCard = ({onDeviceInfo, testId}: Props) => {
                     </Text>
                   </View>
                 ))}
+              </View>
+            )}
+
+            {/* NNAPI discovery is deliberately not presented as proof of DSP execution. */}
+            {Platform.OS === 'android' && (
+              <View style={styles.section}>
+                <Text variant="labelSmall" style={styles.sectionTitle}>
+                  {l10n.benchmark.deviceInfoCard.sections.nnapiDetails}
+                </Text>
+                <View style={styles.deviceInfoRow}>
+                  <Text variant="labelSmall" style={styles.deviceInfoLabel}>
+                    {l10n.benchmark.deviceInfoCard.fields.nnapiDiscovery}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {nnapiInfo.available
+                      ? l10n.benchmark.deviceInfoCard.instructions.yes
+                      : l10n.benchmark.deviceInfoCard.instructions.no}
+                  </Text>
+                </View>
+                {!nnapiInfo.available ? (
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {nnapiInfo.error ||
+                      l10n.benchmark.deviceInfoCard.nnapiUnavailable}
+                  </Text>
+                ) : nnapiInfo.devices.length === 0 ? (
+                  <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                    {l10n.benchmark.deviceInfoCard.nnapiNoDevices}
+                  </Text>
+                ) : (
+                  nnapiInfo.devices.map((device, index) => (
+                    <View
+                      key={`${device.name}-${index}`}
+                      style={styles.deviceInfoRow}>
+                      <Text variant="labelSmall" style={styles.deviceInfoLabel}>
+                        {device.type}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                        {device.name}
+                        {device.version ? ` • ${device.version}` : ''}
+                        {typeof device.featureLevel === 'number'
+                          ? ` • NNAPI ${device.featureLevel}`
+                          : ''}
+                      </Text>
+                    </View>
+                  ))
+                )}
+                <Text variant="bodySmall" style={styles.deviceInfoValue}>
+                  {l10n.benchmark.deviceInfoCard.nnapiNote}
+                </Text>
               </View>
             )}
 
